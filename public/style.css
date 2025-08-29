@@ -1,0 +1,82 @@
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(120deg, #e0eafc, #cfdef3);
+  margin: 0;
+  padding: 0;
+}
+.container {
+  max-width: 600px;
+  margin: 3rem auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  padding: 2rem 2.5rem;
+}
+h1 {
+  color: #2d3a4b;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+.stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+.stat-box {
+  background: #f6fafd;
+  border-radius: 10px;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  text-align: center;
+  flex: 1;
+  margin: 0 0.5rem;
+}
+.stat-label {
+  color: #6b7a8f;
+  font-size: 1rem;
+}
+.stat-value {
+  font-size: 2.2rem;
+  color: #1e90ff;
+  font-weight: bold;
+}
+.section-title {
+  color: #2d3a4b;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #f6fafd;
+  border-radius: 10px;
+  overflow: hidden;
+}
+th,
+td {
+  padding: 0.7rem 0.5rem;
+  text-align: left;
+}
+th {
+  background: #eaf3fb;
+  color: #1e90ff;
+  font-weight: 600;
+}
+tr:nth-child(even) {
+  background: #f0f6fb;
+}
+tr:hover {
+  background: #d6eaff;
+}
+@media (max-width: 700px) {
+  .container {
+    padding: 1rem;
+  }
+  .stats {
+    flex-direction: column;
+  }
+  .stat-box {
+    margin: 0.5rem 0;
+  }
+}

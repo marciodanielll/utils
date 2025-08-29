@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>System Monitor</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>System Monitor</h1>
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-label">CPU (%)</div>
+          <div class="stat-value" id="cpu">--</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Memory (%)</div>
+          <div class="stat-value" id="mem">--</div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title">Top Processes</div>
+        <table>
+          <thead>
+            <tr>
+              <th>PID</th>
+              <th>Command</th>
+              <th>CPU (%)</th>
+              <th>Memory (%)</th>
+            </tr>
+          </thead>
+          <tbody id="processes"></tbody>
+        </table>
+      </div>
+    </div>
+    <script>
+      function parseTop(raw) {
+        // Extrai CPU e Memória do topo
+        const cpuLine = raw.match(/%Cpu\(s\):\s+([\d.,]+)\s+us/);
+        const memLine = raw.match(
+          /KiB Mem :.*?(\d+[.,]?\d*)\s+total,.*?(\d+[.,]?\d*)\s+free,.*?(\d+[.,]?\d*)\s+used/
+        );
+        let cpu = cpuLine ? parseFloat(cpuLine[1].replace(",", ".")) : null;
+        let mem = null;
+        if (memLine) {
+          const total = parseFloat(memLine[1].replace(",", "."));
+          const used = parseFloat(memLine[3].replace(",", "."));
+          mem = total ? ((used / total) * 100).toFixed(1) : null;
+        }
+        return { cpu, mem };
+      }
+      function parseProcesses(raw) {
+        // Pega linhas do ps
+        const lines = raw.split("\n");
+        const psStart = lines.findIndex((l) => l.startsWith("  PID"));
+        if (psStart === -1) return [];
+        return lines
+          .slice(psStart + 1)
+          .filter(Boolean)
+          .map((line) => {
+            const m = line.trim().split(/\s+/, 4);
+            return { pid: m[0], cmd: m[1], cpu: m[2], mem: m[3] };
+          });
+      }
+      async function fetchStats() {
+        const res = await fetch("/api/stats");
+        const data = await res.json();
+        if (data.raw) {
+          const { cpu, mem } = parseTop(data.raw);
+          document.getElementById("cpu").textContent =
+            cpu !== null ? cpu.toFixed(1) : "--";
+          document.getElementById("mem").textContent =
+            mem !== null ? mem : "--";
+          const procs = parseProcesses(data.raw);
+          const tbody = document.getElementById("processes");
+          tbody.innerHTML = procs
+            .map(
+              (p) =>
+                `<tr><td>${p.pid}</td><td>${p.cmd}</td><td>${p.cpu}</td><td>${p.mem}</td></tr>`
+            )
+            .join("");
+        }
+      }
+      fetchStats();
+      setInterval(fetchStats, 3000);
+    </script>
+  </body>
+</html>
