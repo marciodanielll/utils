@@ -36,29 +36,45 @@
     </div>
     <script>
       function parseTop(raw) {
-        // Extrai CPU e Memória do topo
-        const cpuLine = raw.match(/%Cpu\(s\):\s+([\d.,]+)\s+us/);
-        const memLine = raw.match(
-          /KiB Mem :.*?(\d+[.,]?\d*)\s+total,.*?(\d+[.,]?\d*)\s+free,.*?(\d+[.,]?\d*)\s+used/
-        );
-        let cpu = cpuLine ? parseFloat(cpuLine[1].replace(",", ".")) : null;
-        let mem = null;
+        // Tenta capturar CPU e Memória de diferentes formatos
+        let cpu = null, mem = null;
+        // CPU: pega linha com 'Cpu(s):' ou 'CPU:'
+        const cpuLine = raw.match(/Cpu\(s\):\s*([\d.,]+)\s*us|CPU:\s*([\d.,]+)%/i);
+        if (cpuLine) {
+          cpu = parseFloat((cpuLine[1] || cpuLine[2]).replace(",", "."));
+        } else {
+          // Alpine pode ter linha: 'CPU:  2.0% usr'
+          const cpuAlt = raw.match(/CPU:\s*([\d.,]+)%/i);
+          if (cpuAlt) cpu = parseFloat(cpuAlt[1].replace(",", "."));
+        }
+        // Memória: pega linha com 'Mem :' ou 'Mem:'
+        const memLine = raw.match(/Mem\s*:\s*([\d.]+)[A-Za-z]* total,\s*([\d.]+)[A-Za-z]* free,\s*([\d.]+)[A-Za-z]* used/);
         if (memLine) {
-          const total = parseFloat(memLine[1].replace(",", "."));
-          const used = parseFloat(memLine[3].replace(",", "."));
+          const total = parseFloat(memLine[1]);
+          const used = parseFloat(memLine[3]);
           mem = total ? ((used / total) * 100).toFixed(1) : null;
+        } else {
+          // Alpine pode ter: 'Mem: 123456K used, 654321K free, 777777K total'
+          const memAlt = raw.match(/Mem:\s*([\d.]+)K used,\s*([\d.]+)K free,\s*([\d.]+)K total/);
+          if (memAlt) {
+            const used = parseFloat(memAlt[1]);
+            const total = parseFloat(memAlt[3]);
+            mem = total ? ((used / total) * 100).toFixed(1) : null;
+          }
         }
         return { cpu, mem };
       }
       function parseProcesses(raw) {
-        // Pega linhas do ps
+        // Pega linhas do ps, ignora cabeçalho e pega colunas corretas
         const lines = raw.split("\n");
-        const psStart = lines.findIndex((l) => l.startsWith("  PID"));
+        // Procura linha que começa com PID (pode ter espaços ou não)
+        const psStart = lines.findIndex((l) => l.trim().toUpperCase().startsWith("PID"));
         if (psStart === -1) return [];
         return lines
           .slice(psStart + 1)
-          .filter(Boolean)
+          .filter(line => line.trim())
           .map((line) => {
+            // Alpine pode ter colunas diferentes, mas sempre: PID CMD %CPU %MEM
             const m = line.trim().split(/\s+/, 4);
             return { pid: m[0], cmd: m[1], cpu: m[2], mem: m[3] };
           });
